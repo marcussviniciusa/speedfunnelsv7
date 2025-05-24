@@ -662,6 +662,50 @@ export const getAvailableFields = async (req, res) => {
         category: 'Meta Ads'
       },
       
+      // Meta Ads - Métricas de Conversão
+      {
+        name: 'meta_purchases',
+        label: 'Meta Ads - Compras',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      {
+        name: 'meta_purchase_value',
+        label: 'Meta Ads - Valor das Compras',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      {
+        name: 'meta_add_to_cart',
+        label: 'Meta Ads - Adicionar ao Carrinho',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      {
+        name: 'meta_view_content',
+        label: 'Meta Ads - Visualizar Página',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      {
+        name: 'meta_leads',
+        label: 'Meta Ads - Leads',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      {
+        name: 'meta_initiate_checkout',
+        label: 'Meta Ads - Iniciar Checkout',
+        datatype: 'number',
+        operators: ['=', '!=', '>', '>=', '<', '<='],
+        category: 'Meta Ads Conversões'
+      },
+      
       // Google Analytics fields
       {
         name: 'ga_sessions',

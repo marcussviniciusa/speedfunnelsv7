@@ -35,7 +35,12 @@ import {
   AttachMoney as AttachMoneyIcon,
   Visibility as VisibilityIcon,
   PeopleAlt as PeopleAltIcon,
-  TrendingUp as TrendingUpIcon
+  TrendingUp as TrendingUpIcon,
+  ShoppingCart as ShoppingCartIcon,
+  RemoveShoppingCart as AbandonedCartIcon,
+  Pageview as PageViewIcon,
+  PersonAdd as LeadIcon,
+  CheckCircle as ConversionIcon
 } from '@mui/icons-material';
 
 const CustomWidget = ({ widget, data = {}, loading = false }) => {
@@ -179,6 +184,31 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
         value = data.metaAds?.totalReach || 0;
         console.log(`🔍 [CustomWidget] meta_reach - totalReach:`, data.metaAds?.totalReach);
         break;
+      // Novas métricas de conversão
+      case 'meta_purchases':
+        value = data.metaAds?.totalPurchases || 0;
+        console.log(`🔍 [CustomWidget] meta_purchases - totalPurchases:`, data.metaAds?.totalPurchases);
+        break;
+      case 'meta_purchase_value':
+        value = data.metaAds?.totalPurchaseValue || 0;
+        console.log(`🔍 [CustomWidget] meta_purchase_value - totalPurchaseValue:`, data.metaAds?.totalPurchaseValue);
+        break;
+      case 'meta_add_to_cart':
+        value = data.metaAds?.totalAddToCart || 0;
+        console.log(`🔍 [CustomWidget] meta_add_to_cart - totalAddToCart:`, data.metaAds?.totalAddToCart);
+        break;
+      case 'meta_view_content':
+        value = data.metaAds?.totalViewContent || 0;
+        console.log(`🔍 [CustomWidget] meta_view_content - totalViewContent:`, data.metaAds?.totalViewContent);
+        break;
+      case 'meta_leads':
+        value = data.metaAds?.totalLeads || 0;
+        console.log(`🔍 [CustomWidget] meta_leads - totalLeads:`, data.metaAds?.totalLeads);
+        break;
+      case 'meta_initiate_checkout':
+        value = data.metaAds?.totalInitiateCheckout || 0;
+        console.log(`🔍 [CustomWidget] meta_initiate_checkout - totalInitiateCheckout:`, data.metaAds?.totalInitiateCheckout);
+        break;
       case 'ga_sessions':
         value = data.googleAnalytics?.totalSessions || 0;
         console.log(`🔍 [CustomWidget] ga_sessions - data.googleAnalytics:`, data.googleAnalytics);
@@ -201,11 +231,11 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
         console.log(`🔍 [CustomWidget] combined_cost_per_session - calculado:`, value);
         break;
       default:
-        console.log(`❌ [CustomWidget] Métrica não reconhecida: ${metricId}`);
+        console.log(`🔍 [CustomWidget] Métrica não reconhecida: ${metricId}`);
         value = 0;
     }
     
-    console.log(`🔍 [CustomWidget] Valor final retornado para ${metricId}: ${value}`);
+    console.log(`🔍 [CustomWidget] Valor final para ${metricId}: ${value}`);
     return value;
   };
 
@@ -246,6 +276,18 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
       case 'meta_ctr':
       case 'combined_roi':
         return <TrendingUpIcon color="info" {...iconProps} />;
+      case 'meta_purchases':
+        return <ShoppingCartIcon color="primary" {...iconProps} />;
+      case 'meta_purchase_value':
+        return <ShoppingCartIcon color="primary" {...iconProps} />;
+      case 'meta_add_to_cart':
+        return <ShoppingCartIcon color="primary" {...iconProps} />;
+      case 'meta_view_content':
+        return <PageViewIcon color="primary" {...iconProps} />;
+      case 'meta_leads':
+        return <LeadIcon color="primary" {...iconProps} />;
+      case 'meta_initiate_checkout':
+        return <ConversionIcon color="primary" {...iconProps} />;
       default:
         return <TrendingUpIcon color="primary" {...iconProps} />;
     }
@@ -262,6 +304,13 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
       'meta_ctr': 'percentage',
       'meta_cpm': 'currency',
       'meta_reach': 'number',
+      // Novas métricas de conversão
+      'meta_purchases': 'number',
+      'meta_purchase_value': 'currency',
+      'meta_add_to_cart': 'number',
+      'meta_view_content': 'number',
+      'meta_leads': 'number',
+      'meta_initiate_checkout': 'number',
       'ga_sessions': 'number',
       'ga_users': 'number',
       'ga_pageviews': 'number',
@@ -344,6 +393,24 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                 case 'meta_reach':
                   item.reach = account.reach || 0;
                   break;
+                case 'meta_purchases':
+                  item.purchases = account.purchases || 0;
+                  break;
+                case 'meta_purchase_value':
+                  item.purchaseValue = account.purchaseValue || 0;
+                  break;
+                case 'meta_add_to_cart':
+                  item.addToCart = account.addToCart || 0;
+                  break;
+                case 'meta_view_content':
+                  item.viewContent = account.viewContent || 0;
+                  break;
+                case 'meta_leads':
+                  item.leads = account.leads || 0;
+                  break;
+                case 'meta_initiate_checkout':
+                  item.initiateCheckout = account.initiateCheckout || 0;
+                  break;
               }
             }
           });
@@ -416,6 +483,24 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
               break;
             case 'ga_pageviews':
               aggregatedItem.pageviews = value;
+              break;
+            case 'meta_purchases':
+              aggregatedItem.purchases = value;
+              break;
+            case 'meta_purchase_value':
+              aggregatedItem.purchaseValue = value;
+              break;
+            case 'meta_add_to_cart':
+              aggregatedItem.addToCart = value;
+              break;
+            case 'meta_view_content':
+              aggregatedItem.viewContent = value;
+              break;
+            case 'meta_leads':
+              aggregatedItem.leads = value;
+              break;
+            case 'meta_initiate_checkout':
+              aggregatedItem.initiateCheckout = value;
               break;
           }
         });

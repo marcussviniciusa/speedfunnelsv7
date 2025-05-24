@@ -79,6 +79,15 @@ const DashboardEditor = ({ open, onClose, onSave, currentConfig = null }) => {
     { id: 'meta_ctr', name: 'Meta Ads - CTR', source: 'meta', type: 'percentage' },
     { id: 'meta_cpm', name: 'Meta Ads - CPM', source: 'meta', type: 'currency' },
     { id: 'meta_reach', name: 'Meta Ads - Alcance', source: 'meta', type: 'number' },
+    
+    // Métricas de conversão Meta Ads
+    { id: 'meta_purchases', name: 'Meta Ads - Compras', source: 'meta', type: 'number' },
+    { id: 'meta_purchase_value', name: 'Meta Ads - Valor Compras', source: 'meta', type: 'currency' },
+    { id: 'meta_add_to_cart', name: 'Meta Ads - Carrinho', source: 'meta', type: 'number' },
+    { id: 'meta_view_content', name: 'Meta Ads - Visualizar Página', source: 'meta', type: 'number' },
+    { id: 'meta_leads', name: 'Meta Ads - Leads', source: 'meta', type: 'number' },
+    { id: 'meta_initiate_checkout', name: 'Meta Ads - Iniciar Checkout', source: 'meta', type: 'number' },
+    
     { id: 'ga_sessions', name: 'GA - Sessões', source: 'ga', type: 'number' },
     { id: 'ga_users', name: 'GA - Usuários', source: 'ga', type: 'number' },
     { id: 'ga_pageviews', name: 'GA - Visualizações', source: 'ga', type: 'number' },
@@ -98,6 +107,24 @@ const DashboardEditor = ({ open, onClose, onSave, currentConfig = null }) => {
       color: '#1976d2'
     },
     {
+      id: 'meta_conversions',
+      title: 'Conversões Meta Ads',
+      type: 'chart',
+      chartType: 'bar',
+      metrics: ['meta_purchases', 'meta_add_to_cart', 'meta_leads'],
+      size: 'large',
+      color: '#4caf50'
+    },
+    {
+      id: 'meta_ecommerce',
+      title: 'E-commerce Meta Ads',
+      type: 'chart',
+      chartType: 'line',
+      metrics: ['meta_purchase_value', 'meta_view_content', 'meta_initiate_checkout'],
+      size: 'large',
+      color: '#ff9800'
+    },
+    {
       id: 'ga_overview',
       title: 'Visão Geral Google Analytics',
       type: 'chart',
@@ -113,6 +140,22 @@ const DashboardEditor = ({ open, onClose, onSave, currentConfig = null }) => {
       metrics: ['meta_spend'],
       size: 'small',
       color: '#d32f2f'
+    },
+    {
+      id: 'conversions_card',
+      title: 'Total Compras',
+      type: 'card',
+      metrics: ['meta_purchases'],
+      size: 'small',
+      color: '#4caf50'
+    },
+    {
+      id: 'revenue_card',
+      title: 'Receita Meta Ads',
+      type: 'card',
+      metrics: ['meta_purchase_value'],
+      size: 'small',
+      color: '#ff9800'
     },
     {
       id: 'sessions_card',

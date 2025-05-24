@@ -33,11 +33,23 @@ const SimpleFilters = ({ value = [], onChange, reportType = 'combined' }) => {
   // Filtros disponíveis organizados por categoria
   const filterOptions = {
     meta: [
+      // Meta Ads - Básico
       { id: 'meta_spend', label: 'Gasto Meta Ads', type: 'number', unit: 'R$', icon: '💰' },
       { id: 'meta_impressions', label: 'Impressões', type: 'number', unit: '', icon: '👁️' },
       { id: 'meta_clicks', label: 'Cliques', type: 'number', unit: '', icon: '🖱️' },
+      { id: 'meta_reach', label: 'Alcance', type: 'number', unit: '', icon: '📡' },
       { id: 'meta_ctr', label: 'CTR (%)', type: 'number', unit: '%', icon: '📊' },
       { id: 'meta_cpm', label: 'CPM', type: 'number', unit: 'R$', icon: '💵' },
+      
+      // Meta Ads - Conversões
+      { id: 'meta_purchases', label: 'Compras', type: 'number', unit: '', icon: '🛒' },
+      { id: 'meta_purchase_value', label: 'Valor das Compras', type: 'number', unit: 'R$', icon: '💰' },
+      { id: 'meta_add_to_cart', label: 'Adicionar ao Carrinho', type: 'number', unit: '', icon: '🛍️' },
+      { id: 'meta_view_content', label: 'Visualizar Página', type: 'number', unit: '', icon: '👁️' },
+      { id: 'meta_leads', label: 'Leads', type: 'number', unit: '', icon: '👤' },
+      { id: 'meta_initiate_checkout', label: 'Iniciar Checkout', type: 'number', unit: '', icon: '💳' },
+      
+      // Meta Ads - Identificadores
       { id: 'meta_campaign_name', label: 'Nome da Campanha', type: 'text', unit: '', icon: '🎯' },
       { id: 'meta_account_name', label: 'Conta Meta Ads', type: 'text', unit: '', icon: '📱' }
     ],

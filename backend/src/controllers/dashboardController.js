@@ -175,7 +175,13 @@ export const getDashboardData = async (req, res) => {
         totalClicks: 0,
         totalReach: 0,
         avgCTR: 0,
-        avgCPM: 0
+        avgCPM: 0,
+        totalPurchases: 0,
+        totalPurchaseValue: 0,
+        totalAddToCart: 0,
+        totalViewContent: 0,
+        totalLeads: 0,
+        totalInitiateCheckout: 0
       },
       googleAnalytics: {
         accounts: [],
@@ -212,7 +218,7 @@ export const getDashboardData = async (req, res) => {
         FacebookAdsApi.init(accessToken);
         const account = new AdAccount(`act_${accountId}`);
 
-        // Buscar insights com datas convertidas
+        // Buscar insights com datas convertidas e métricas de conversão
         const insights = await account.getInsights([], {
           level: 'account',
           time_range: { 
@@ -225,12 +231,30 @@ export const getDashboardData = async (req, res) => {
             'clicks',
             'reach',
             'ctr',
-            'cpm'
+            'cpm',
+            'actions',  // Ações/Conversões
+            'action_values',  // Valores das conversões
+            'conversions',  // Conversões totais
+            'conversion_values'  // Valores das conversões
           ]
         });
 
         if (insights.length > 0) {
           const insight = insights[0];
+          
+          // Extrair métricas de conversão
+          const extractConversionMetric = (actions, actionType) => {
+            if (!actions || !Array.isArray(actions)) return 0;
+            const action = actions.find(a => a.action_type === actionType);
+            return action ? parseFloat(action.value) || 0 : 0;
+          };
+
+          const extractConversionValue = (actionValues, actionType) => {
+            if (!actionValues || !Array.isArray(actionValues)) return 0;
+            const actionValue = actionValues.find(a => a.action_type === actionType);
+            return actionValue ? parseFloat(actionValue.value) || 0 : 0;
+          };
+
           const accountData = {
             accountId,
             accountName: metaAccount.accountName,
@@ -239,7 +263,26 @@ export const getDashboardData = async (req, res) => {
             clicks: parseInt(insight.clicks) || 0,
             reach: parseInt(insight.reach) || 0,
             ctr: parseFloat(insight.ctr) || 0,
-            cpm: parseFloat(insight.cpm) || 0
+            cpm: parseFloat(insight.cpm) || 0,
+            // Métricas de conversão
+            purchases: extractConversionMetric(insight.actions, 'purchase'),
+            purchaseValue: extractConversionValue(insight.action_values, 'purchase'),
+            addToCart: extractConversionMetric(insight.actions, 'add_to_cart'),
+            addToCartValue: extractConversionValue(insight.action_values, 'add_to_cart'),
+            viewContent: extractConversionMetric(insight.actions, 'view_content'),
+            viewContentValue: extractConversionValue(insight.action_values, 'view_content'),
+            initiateCheckout: extractConversionMetric(insight.actions, 'initiate_checkout'),
+            initiateCheckoutValue: extractConversionValue(insight.action_values, 'initiate_checkout'),
+            leads: extractConversionMetric(insight.actions, 'lead'),
+            leadValue: extractConversionValue(insight.action_values, 'lead'),
+            completeRegistration: extractConversionMetric(insight.actions, 'complete_registration'),
+            completeRegistrationValue: extractConversionValue(insight.action_values, 'complete_registration'),
+            // Conversões personalizadas
+            customConversions: insight.conversions ? parseFloat(insight.conversions) || 0 : 0,
+            customConversionsValue: insight.conversion_values ? parseFloat(insight.conversion_values) || 0 : 0,
+            // Todas as ações para referência
+            allActions: insight.actions || [],
+            allActionValues: insight.action_values || []
           };
 
           dashboardData.metaAds.accounts.push(accountData);
@@ -247,6 +290,14 @@ export const getDashboardData = async (req, res) => {
           dashboardData.metaAds.totalImpressions += accountData.impressions;
           dashboardData.metaAds.totalClicks += accountData.clicks;
           dashboardData.metaAds.totalReach += accountData.reach;
+          
+          // Somar métricas de conversão
+          dashboardData.metaAds.totalPurchases = (dashboardData.metaAds.totalPurchases || 0) + accountData.purchases;
+          dashboardData.metaAds.totalPurchaseValue = (dashboardData.metaAds.totalPurchaseValue || 0) + accountData.purchaseValue;
+          dashboardData.metaAds.totalAddToCart = (dashboardData.metaAds.totalAddToCart || 0) + accountData.addToCart;
+          dashboardData.metaAds.totalViewContent = (dashboardData.metaAds.totalViewContent || 0) + accountData.viewContent;
+          dashboardData.metaAds.totalLeads = (dashboardData.metaAds.totalLeads || 0) + accountData.leads;
+          dashboardData.metaAds.totalInitiateCheckout = (dashboardData.metaAds.totalInitiateCheckout || 0) + accountData.initiateCheckout;
         }
       } catch (error) {
         console.error(`Error fetching Meta Ads data for account ${accountId}:`, error);
@@ -259,6 +310,14 @@ export const getDashboardData = async (req, res) => {
         .reduce((sum, acc) => sum + acc.ctr, 0) / dashboardData.metaAds.accounts.length;
       dashboardData.metaAds.avgCPM = dashboardData.metaAds.accounts
         .reduce((sum, acc) => sum + acc.cpm, 0) / dashboardData.metaAds.accounts.length;
+      
+      // Inicializar totais de conversão se não existem
+      dashboardData.metaAds.totalPurchases = dashboardData.metaAds.totalPurchases || 0;
+      dashboardData.metaAds.totalPurchaseValue = dashboardData.metaAds.totalPurchaseValue || 0;
+      dashboardData.metaAds.totalAddToCart = dashboardData.metaAds.totalAddToCart || 0;
+      dashboardData.metaAds.totalViewContent = dashboardData.metaAds.totalViewContent || 0;
+      dashboardData.metaAds.totalLeads = dashboardData.metaAds.totalLeads || 0;
+      dashboardData.metaAds.totalInitiateCheckout = dashboardData.metaAds.totalInitiateCheckout || 0;
     }
 
     // Processar contas Google Analytics
