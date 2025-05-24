@@ -58,6 +58,7 @@ import metaAdsRoutes from './routes/metaAds.js';
 import googleAnalyticsRoutes from './routes/googleAnalytics.js';
 import dashboardRoutes from './routes/dashboard.js';
 import reportsRoutes from './routes/reports.js';
+import pdfRoutes from './routes/pdfRoutes.js';
 
 // Routes principais
 app.get('/api', (req, res) => {
@@ -70,7 +71,8 @@ app.get('/api', (req, res) => {
       dashboard: '/api/dashboard',
       reports: '/api/reports',
       meta: '/api/meta-ads',
-      analytics: '/api/google-analytics'
+      analytics: '/api/google-analytics',
+      pdf: '/api/pdf'
     }
   });
 });
@@ -82,6 +84,7 @@ app.use('/api/meta-ads', metaAdsRoutes);
 app.use('/api/google-analytics', googleAnalyticsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/pdf', pdfRoutes);
 
 // 404 handler
 app.use((req, res) => {

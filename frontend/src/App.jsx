@@ -12,8 +12,6 @@ import MetaAds from './components/MetaAds/MetaAds';
 import GoogleAnalytics from './components/GoogleAnalytics/GoogleAnalytics';
 import Companies from './components/Admin/Companies';
 import Settings from './components/Settings/Settings';
-import DebugInfo from './components/Debug/DebugInfo';
-import ClearStorage from './components/Debug/ClearStorage';
 
 // Tema personalizado
 const theme = createTheme({
@@ -98,8 +96,6 @@ function App() {
       <ThemeProvider theme={theme}>
         <CssBaseline />
         <AuthProvider>
-          <DebugInfo />
-          <ClearStorage />
           <Router>
           <Routes>
             {/* Rota de login */}

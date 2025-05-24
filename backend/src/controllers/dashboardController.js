@@ -421,6 +421,7 @@ export const saveDashboardConfig = async (req, res) => {
 export const getDashboardConfigs = async (req, res) => {
   try {
     const companyId = await resolveCompanyId(req);
+    const { isDefault } = req.query;
 
     // Buscar dashboards do usuário e dashboards compartilhados
     const filter = {
@@ -431,9 +432,18 @@ export const getDashboardConfigs = async (req, res) => {
       ]
     };
 
+    // Adicionar filtro por isDefault se especificado
+    if (isDefault !== undefined) {
+      filter.isDefault = isDefault === 'true';
+    }
+
+    console.log('🔍 Filtros aplicados no getDashboardConfigs:', filter);
+
     const dashboardConfigs = await DashboardConfig.find(filter)
       .populate('user', 'name email')
       .sort({ isDefault: -1, lastAccessed: -1 });
+
+    console.log('📊 Configurações encontradas:', dashboardConfigs.length);
 
     res.json({
       status: 'success',

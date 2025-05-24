@@ -19,6 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "@google-analytics/data": "^5.1.0",
+    "@types/puppeteer": "^7.0.4",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",

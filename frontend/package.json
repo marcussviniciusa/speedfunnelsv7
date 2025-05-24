@@ -12,16 +12,19 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "@hello-pangea/dnd": "^18.0.1",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
     "@react-querybuilder/material": "^8.7.0",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",
+    "html2canvas": "^1.4.1",
     "react": "^19.1.0",
     "react-datepicker": "^8.3.0",
     "react-dom": "^19.1.0",
     "react-querybuilder": "^8.7.0",
     "react-router-dom": "^7.6.0",
+    "react-to-print": "^3.1.0",
     "recharts": "^2.15.3"
   },
   "devDependencies": {
