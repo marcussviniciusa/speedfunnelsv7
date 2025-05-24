@@ -26,12 +26,14 @@ import {
   Refresh as RefreshIcon,
   FilterList as FilterIcon
 } from '@mui/icons-material';
-import { QueryBuilder, formatQuery } from 'react-querybuilder';
-import 'react-querybuilder/dist/query-builder.css';
 import { reportsAPI } from '../../services/api';
 import ReportVisualization from './ReportVisualization';
 import PredefinedReports from './PredefinedReports';
 import SegmentationPanel from './SegmentationPanel';
+import SimpleFilters from './SimpleFilters';
+import QuickFilters from './QuickFilters';
+import SavedFilters from './SavedFilters';
+import FilterStats from './FilterStats';
 import CustomDatePicker from '../common/CustomDatePicker';
 
 const Reports = () => {
@@ -41,12 +43,8 @@ const Reports = () => {
   const [reportData, setReportData] = useState(null);
   const [error, setError] = useState(null);
 
-  // Estados do QueryBuilder
-  const [query, setQuery] = useState({
-    combinator: 'and',
-    rules: []
-  });
-  const [fields, setFields] = useState([]);
+  // Estados de filtros simplificados
+  const [simpleFilters, setSimpleFilters] = useState([]);
 
   // Estados de configuração do relatório
   const [reportConfig, setReportConfig] = useState({
@@ -71,18 +69,6 @@ const Reports = () => {
     try {
       setLoading(true);
       
-      // Carregar campos para filtros
-      const fieldsResponse = await reportsAPI.getAvailableFields();
-      const fieldsData = fieldsResponse.data.data.fields.map(field => ({
-        name: field.name,
-        label: field.label,
-        datatype: field.datatype,
-        operators: field.operators || ['=', '!=', '>', '<', '>=', '<='],
-        values: field.values,
-        category: field.category
-      }));
-      setFields(fieldsData);
-
       // Carregar relatórios pré-definidos
       const reportsResponse = await reportsAPI.getPredefinedReports();
       setPredefinedReports(reportsResponse.data.data.reports);
@@ -106,7 +92,7 @@ const Reports = () => {
 
       const reportPayload = {
         ...reportConfig,
-        queryBuilderRule: query.rules.length > 0 ? query : null
+        simpleFilters: simpleFilters.filter(f => f.enabled && f.field && f.value)
       };
 
       const response = await reportsAPI.generateAdvancedReport(reportPayload);
@@ -132,9 +118,9 @@ const Reports = () => {
         endDate: 'today'
       });
 
-      // Atualizar query se existe
-      if (reportConfig.queryBuilderRule) {
-        setQuery(reportConfig.queryBuilderRule);
+      // Atualizar filtros se existem
+      if (reportConfig.simpleFilters) {
+        setSimpleFilters(reportConfig.simpleFilters);
       }
 
       // Gerar relatório
@@ -152,9 +138,27 @@ const Reports = () => {
     }
   };
 
+  // Aplicar filtros rápidos
+  const handleApplyQuickFilters = (filters, periodConfig) => {
+    if (filters && filters.length > 0) {
+      // Adicionar aos filtros existentes
+      const newFilters = [...simpleFilters, ...filters];
+      setSimpleFilters(newFilters);
+    }
+    
+    if (periodConfig) {
+      // Atualizar período do relatório
+      setReportConfig(prev => ({
+        ...prev,
+        startDate: periodConfig.startDate,
+        endDate: periodConfig.endDate
+      }));
+    }
+  };
+
   // Resetar filtros
   const resetFilters = () => {
-    setQuery({ combinator: 'and', rules: [] });
+    setSimpleFilters([]);
     setReportConfig({
       reportType: 'combined',
       startDate: '30daysAgo',
@@ -173,7 +177,7 @@ const Reports = () => {
         return (
           <Grid container spacing={3}>
             {/* Painel de Configuração */}
-            <Grid size={{ xs: 12, md: 4 }}>
+            <Grid item xs={12} md={4}>
               <Paper sx={{ p: 3, height: 'fit-content' }}>
                 <Typography variant="h6" gutterBottom>
                   Configuração do Relatório
@@ -241,46 +245,34 @@ const Reports = () => {
               </Box>
             </Grid>
 
-            {/* QueryBuilder */}
-            <Grid size={{ xs: 12, md: 8 }}>
-              <Paper sx={{ p: 3 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                  <FilterIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6">
-                    Filtros Avançados
-                  </Typography>
-                </Box>
-
-                {fields.length > 0 && (
-                  <Box sx={{ '& .queryBuilder': { border: '1px solid #ddd', borderRadius: 1 } }}>
-                    <QueryBuilder
-                      fields={fields}
-                      query={query}
-                      onQueryChange={setQuery}
-                      addRuleToNewGroups
-                      resetOnFieldChange
-                      resetOnOperatorChange
-                      controlClassnames={{
-                        queryBuilder: 'queryBuilder'
-                      }}
-                    />
-                  </Box>
-                )}
-
-                {/* Preview da Query */}
-                {query.rules.length > 0 && (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle2" gutterBottom>
-                      Preview da Consulta:
-                    </Typography>
-                    <Paper sx={{ p: 2, bgcolor: 'grey.100' }}>
-                      <pre style={{ margin: 0, fontSize: '0.8rem', whiteSpace: 'pre-wrap' }}>
-                        {JSON.stringify(query, null, 2)}
-                      </pre>
-                    </Paper>
-                  </Box>
-                )}
-              </Paper>
+            {/* Área de Filtros */}
+            <Grid item xs={12} md={8}>
+              {/* Filtros Salvos */}
+              <SavedFilters
+                currentFilters={simpleFilters.filter(f => f.enabled && f.field && f.value)}
+                onApplyFilters={setSimpleFilters}
+                reportType={reportConfig.reportType}
+              />
+              
+              {/* Filtros Rápidos */}
+              <QuickFilters
+                onApplyFilter={handleApplyQuickFilters}
+                reportType={reportConfig.reportType}
+              />
+              
+              {/* SimpleFilters */}
+              <SimpleFilters
+                value={simpleFilters}
+                onChange={setSimpleFilters}
+                reportType={reportConfig.reportType}
+              />
+              
+              {/* Estatísticas dos Filtros */}
+              <FilterStats
+                simpleFilters={simpleFilters}
+                reportType={reportConfig.reportType}
+                reportData={reportData}
+              />
             </Grid>
           </Grid>
         );

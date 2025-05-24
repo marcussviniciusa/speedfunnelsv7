@@ -137,7 +137,69 @@ const removeCredentialsFile = (filePath) => {
   }
 };
 
-// Processar filtros avançados usando QueryBuilder
+// Processar filtros simples
+const processSimpleFilters = (simpleFilters = [], dataSource = 'all') => {
+  const filters = {
+    meta: [],
+    ga: [],
+    combined: []
+  };
+
+  if (!simpleFilters || simpleFilters.length === 0) {
+    return filters;
+  }
+
+  simpleFilters.forEach(filter => {
+    if (!filter.enabled || !filter.field || filter.value === '') {
+      return;
+    }
+
+    const { field, operator, value } = filter;
+    
+    // Mapear campos para diferentes fontes de dados
+    const fieldMapping = {
+      // Meta Ads fields
+      'meta_spend': { source: 'meta', field: 'spend', type: 'number' },
+      'meta_impressions': { source: 'meta', field: 'impressions', type: 'number' },
+      'meta_clicks': { source: 'meta', field: 'clicks', type: 'number' },
+      'meta_ctr': { source: 'meta', field: 'ctr', type: 'number' },
+      'meta_cpm': { source: 'meta', field: 'cpm', type: 'number' },
+      'meta_campaign_name': { source: 'meta', field: 'campaign_name', type: 'string' },
+      'meta_account_name': { source: 'meta', field: 'account_name', type: 'string' },
+      
+      // Google Analytics fields
+      'ga_sessions': { source: 'ga', field: 'sessions', type: 'number' },
+      'ga_users': { source: 'ga', field: 'users', type: 'number' },
+      'ga_pageviews': { source: 'ga', field: 'pageviews', type: 'number' },
+      'ga_bounce_rate': { source: 'ga', field: 'bounceRate', type: 'number' },
+      'ga_session_duration': { source: 'ga', field: 'avgSessionDuration', type: 'number' },
+      'ga_device_category': { source: 'ga', field: 'deviceCategory', type: 'string' },
+      'ga_traffic_source': { source: 'ga', field: 'source', type: 'string' },
+      
+      // Combined fields
+      'total_spend': { source: 'combined', field: 'totalSpend', type: 'number' },
+      'total_sessions': { source: 'combined', field: 'totalSessions', type: 'number' },
+      'cost_per_session': { source: 'combined', field: 'costPerSession', type: 'number' }
+    };
+
+    const fieldInfo = fieldMapping[field];
+    if (!fieldInfo) return;
+
+    const filterObj = {
+      field: fieldInfo.field,
+      operator,
+      value: fieldInfo.type === 'number' ? parseFloat(value) : value,
+      type: fieldInfo.type
+    };
+
+    // Adicionar ao array apropriado
+    filters[fieldInfo.source].push(filterObj);
+  });
+
+  return filters;
+};
+
+// Processar filtros avançados usando QueryBuilder (manter compatibilidade)
 const processAdvancedFilters = (queryBuilderRule, dataSource = 'all') => {
   const filters = {
     meta: [],
@@ -288,17 +350,38 @@ const applyGAFilters = (data, filters) => {
 // Gerar relatório com filtros avançados
 export const generateAdvancedReport = async (req, res) => {
   try {
-    const {
-      startDate = '30daysAgo',
+    const companyId = await resolveCompanyId(req);
+    const { 
+      reportType = 'combined', 
+      startDate = '30daysAgo', 
       endDate = 'today',
-      queryBuilderRule = null,
       metaAccounts = '',
       gaAccounts = '',
       segmentation = {},
-      reportType = 'combined'
+      simpleFilters = [],
+      queryBuilderRule = null // Manter compatibilidade
     } = req.body;
 
-    const companyId = await resolveCompanyId(req);
+    console.log('📊 [generateAdvancedReport] Iniciando geração de relatório:', {
+      reportType,
+      startDate,
+      endDate,
+      simpleFilters: simpleFilters?.length || 0,
+      hasQueryBuilder: !!queryBuilderRule
+    });
+
+    // Processar filtros (priorizar simpleFilters)
+    let processedFilters;
+    if (simpleFilters && simpleFilters.length > 0) {
+      processedFilters = processSimpleFilters(simpleFilters, reportType);
+      console.log('📊 [generateAdvancedReport] Usando filtros simples:', processedFilters);
+    } else if (queryBuilderRule) {
+      processedFilters = processAdvancedFilters(queryBuilderRule, reportType);
+      console.log('📊 [generateAdvancedReport] Usando QueryBuilder (compatibilidade):', processedFilters);
+    } else {
+      processedFilters = { meta: [], ga: [], combined: [] };
+      console.log('📊 [generateAdvancedReport] Nenhum filtro aplicado');
+    }
 
     const company = await Company.findById(companyId);
     if (!company) {
@@ -311,9 +394,6 @@ export const generateAdvancedReport = async (req, res) => {
     // Converter datas para formato ISO
     const sinceDate = convertDateToISO(startDate);
     const untilDate = convertDateToISO(endDate);
-
-    // Processar filtros do QueryBuilder
-    const filters = processAdvancedFilters(queryBuilderRule, reportType);
 
     const reportData = {
       company: {
@@ -391,7 +471,7 @@ export const generateAdvancedReport = async (req, res) => {
           });
 
           // Aplicar filtros
-          const filteredInsights = applyMetaFilters(insights, filters.meta);
+          const filteredInsights = applyMetaFilters(insights, processedFilters.meta);
 
           filteredInsights.forEach(insight => {
             const campaignData = {
@@ -482,7 +562,7 @@ export const generateAdvancedReport = async (req, res) => {
               }));
 
               // Aplicar filtros
-              const filteredData = applyGAFilters(processedData, filters.ga);
+              const filteredData = applyGAFilters(processedData, processedFilters.ga);
 
               filteredData.forEach(data => {
                 reportData.googleAnalytics.segments.push(data);
