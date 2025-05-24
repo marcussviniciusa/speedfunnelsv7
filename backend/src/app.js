@@ -24,9 +24,22 @@ app.use(cors({
   credentials: true
 }));
 
-// Body parser
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parser - Excluir rotas de upload de arquivo
+app.use((req, res, next) => {
+  // Não aplicar body parser nas rotas de upload
+  if (req.path === '/api/google-analytics/accounts' && req.method === 'POST') {
+    return next();
+  }
+  express.json({ limit: '10mb' })(req, res, next);
+});
+
+app.use((req, res, next) => {
+  // Não aplicar urlencoded nas rotas de upload
+  if (req.path === '/api/google-analytics/accounts' && req.method === 'POST') {
+    return next();
+  }
+  express.urlencoded({ extended: true, limit: '10mb' })(req, res, next);
+});
 
 // Route para health check
 app.get('/health', (req, res) => {

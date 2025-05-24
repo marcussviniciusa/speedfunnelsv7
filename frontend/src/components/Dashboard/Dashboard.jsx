@@ -27,6 +27,7 @@ import {
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { dashboardAPI, metaAdsAPI, googleAnalyticsAPI } from '../../services/api';
 import { useAuth } from '../../contexts/AuthContext';
+import CustomDatePicker from '../common/CustomDatePicker';
 
 const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -97,11 +98,8 @@ const Dashboard = () => {
     }
   };
 
-  const handleDateRangeChange = (field) => (event) => {
-    setDateRange(prev => ({
-      ...prev,
-      [field]: event.target.value
-    }));
+  const handleDateRangeChange = (newDateRange) => {
+    setDateRange(newDateRange);
   };
 
   const handleAccountSelection = (type) => (event) => {
@@ -145,33 +143,13 @@ const Dashboard = () => {
       {/* Filtros */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Grid container spacing={3} alignItems="center">
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel>Data Inicial</InputLabel>
-              <Select
-                value={dateRange.startDate}
-                onChange={handleDateRangeChange('startDate')}
-                label="Data Inicial"
-              >
-                <MenuItem value="7daysAgo">Últimos 7 dias</MenuItem>
-                <MenuItem value="30daysAgo">Últimos 30 dias</MenuItem>
-                <MenuItem value="90daysAgo">Últimos 90 dias</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid size={{ xs: 12, sm: 6, md: 3 }}>
-            <FormControl fullWidth>
-              <InputLabel>Data Final</InputLabel>
-              <Select
-                value={dateRange.endDate}
-                onChange={handleDateRangeChange('endDate')}
-                label="Data Final"
-              >
-                <MenuItem value="today">Hoje</MenuItem>
-                <MenuItem value="yesterday">Ontem</MenuItem>
-              </Select>
-            </FormControl>
+          <Grid size={{ xs: 12, sm: 6, md: 4 }}>
+            <CustomDatePicker
+              startDate={dateRange.startDate}
+              endDate={dateRange.endDate}
+              onChange={handleDateRangeChange}
+              label="Período"
+            />
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
@@ -201,6 +179,32 @@ const Dashboard = () => {
           </Grid>
 
           <Grid size={{ xs: 12, sm: 6, md: 3 }}>
+            <FormControl fullWidth>
+              <InputLabel>Contas Google Analytics</InputLabel>
+              <Select
+                multiple
+                value={Array.isArray(selectedAccounts.gaAccounts) ? selectedAccounts.gaAccounts : []}
+                onChange={handleAccountSelection('gaAccounts')}
+                label="Contas Google Analytics"
+                renderValue={(selected) => (
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                    {selected.map((value) => {
+                      const account = availableAccounts.gaAccounts.find(acc => acc.propertyId === value);
+                      return <Chip key={value} label={account?.propertyName || value} size="small" />;
+                    })}
+                  </Box>
+                )}
+              >
+                {availableAccounts.gaAccounts.map((account) => (
+                  <MenuItem key={account.propertyId} value={account.propertyId}>
+                    {account.propertyName}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid size={{ xs: 12, sm: 6, md: 2 }}>
             <Button
               variant="contained"
               onClick={loadDashboardData}

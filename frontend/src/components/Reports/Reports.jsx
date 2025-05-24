@@ -32,6 +32,7 @@ import { reportsAPI } from '../../services/api';
 import ReportVisualization from './ReportVisualization';
 import PredefinedReports from './PredefinedReports';
 import SegmentationPanel from './SegmentationPanel';
+import CustomDatePicker from '../common/CustomDatePicker';
 
 const Reports = () => {
   // Estados principais
@@ -192,19 +193,19 @@ const Reports = () => {
                 </FormControl>
 
                 {/* Período */}
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Período</InputLabel>
-                  <Select
-                    value={reportConfig.startDate}
-                    onChange={(e) => setReportConfig({ ...reportConfig, startDate: e.target.value })}
-                  >
-                    <MenuItem value="today">Hoje</MenuItem>
-                    <MenuItem value="yesterday">Ontem</MenuItem>
-                    <MenuItem value="7daysAgo">Últimos 7 dias</MenuItem>
-                    <MenuItem value="30daysAgo">Últimos 30 dias</MenuItem>
-                    <MenuItem value="90daysAgo">Últimos 90 dias</MenuItem>
-                  </Select>
-                </FormControl>
+                <Box sx={{ mt: 2 }}>
+                  <CustomDatePicker
+                    startDate={reportConfig.startDate}
+                    endDate={reportConfig.endDate}
+                    onChange={(dateRange) => setReportConfig({ 
+                      ...reportConfig, 
+                      startDate: dateRange.startDate,
+                      endDate: dateRange.endDate
+                    })}
+                    label="Período do Relatório"
+                    size="small"
+                  />
+                </Box>
 
                 {/* Botões de Ação */}
                 <Box sx={{ mt: 3, display: 'flex', gap: 1, flexDirection: 'column' }}>

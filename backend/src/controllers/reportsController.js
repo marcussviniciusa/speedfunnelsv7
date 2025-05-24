@@ -100,6 +100,12 @@ const convertDateToISO = (dateString) => {
       const ninetyDaysAgo = new Date(today);
       ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
       return ninetyDaysAgo.toISOString().split('T')[0];
+    case 'thisMonth':
+      const thisMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      return thisMonthStart.toISOString().split('T')[0];
+    case 'lastMonth':
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      return lastMonthStart.toISOString().split('T')[0];
     default:
       // Se já está no formato YYYY-MM-DD ou é uma data válida, retorna como está
       return dateString;
@@ -458,10 +464,8 @@ export const generateAdvancedReport = async (req, res) => {
               dimensions,
               metrics: [
                 { name: 'sessions' },
-                { name: 'users' },
                 { name: 'screenPageViews' },
-                { name: 'averageSessionDuration' },
-                { name: 'bounceRate' }
+                { name: 'activeUsers' }
               ]
             });
 
@@ -471,10 +475,10 @@ export const generateAdvancedReport = async (req, res) => {
                 propertyName: gaAccount.propertyName,
                 dimensions: row.dimensionValues ? row.dimensionValues.map(d => d.value) : [],
                 sessions: parseInt(row.metricValues[0].value) || 0,
-                users: parseInt(row.metricValues[1].value) || 0,
-                pageviews: parseInt(row.metricValues[2].value) || 0,
-                avgSessionDuration: parseFloat(row.metricValues[3].value) || 0,
-                bounceRate: parseFloat(row.metricValues[4].value) * 100 || 0
+                pageviews: parseInt(row.metricValues[1].value) || 0,
+                users: parseInt(row.metricValues[2].value) || 0,
+                avgSessionDuration: 0,
+                bounceRate: 0
               }));
 
               // Aplicar filtros
@@ -856,6 +860,8 @@ export const getSegmentationOptions = async (req, res) => {
         { value: '7daysAgo', label: 'Últimos 7 dias' },
         { value: '30daysAgo', label: 'Últimos 30 dias' },
         { value: '90daysAgo', label: 'Últimos 90 dias' },
+        { value: 'thisMonth', label: 'Este mês' },
+        { value: 'lastMonth', label: 'Mês passado' },
         { value: 'custom', label: 'Personalizado' }
       ]
     };

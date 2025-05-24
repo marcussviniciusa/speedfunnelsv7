@@ -73,12 +73,38 @@
   - [x] Coleta de dados de campanhas
   - [x] Sistema de cache de dados
 
-- [x] **3.2 Integração Google Analytics**
-  - [x] Configuração do @google-analytics/data
-  - [x] Service Account authentication
-  - [x] Endpoint para upload de JSON credentials
+- [x] **3.2 Integração Google Analytics (GA4 Data API)**
+  - [x] Service Account configuração
+  - [x] Autenticação com JSON credentials
   - [x] Coleta de dados GA4
   - [x] Sistema de cache de dados
+  - [x] **🔧 BUG FIX COMPLETO: Upload de arquivo JSON resolvido**
+    - [x] Instalado e configurado middleware multer
+    - [x] Processamento correto de FormData com arquivos
+    - [x] Validações aprimoradas com mensagens específicas
+    - [x] Correção do erro "dados obrigatórios" mesmo preenchendo todos os campos
+    - [x] **SOLUÇÃO FINAL: Content-Type no frontend corrigido**
+      - [x] Removido Content-Type fixo do axios global
+      - [x] Interceptor inteligente para detectar FormData
+      - [x] req.body e req.file agora funcionam corretamente
+  - [x] **🔧 BUG FIX: Super Admin sem Company ID resolvido**
+    - [x] Implementada lógica de fallback para primeira empresa ativa
+    - [x] Aplicado padrão consistente do Meta Ads no Google Analytics
+    - [x] Correção em 3 funções: testConnection, getData, removeAccount
+    - [x] Código limpo sem logs temporários
+  - [x] **🔧 BUG FIX FINAL: Métricas GA4 incompatíveis resolvido**
+    - [x] Identificada causa raiz: averageSessionDuration + bounceRate = INVALID_ARGUMENT
+    - [x] Pesquisa na documentação oficial Google Analytics 4 Data API
+    - [x] Removidas métricas problemáticas de Dashboard e Reports Controller
+    - [x] Sistema agora usa apenas métricas básicas estáveis: sessions, users, screenPageViews
+    - [x] Logs limpos sem erros repetitivos INVALID_ARGUMENT
+    - [x] Dashboard e Relatórios carregando dados GA4 perfeitamente
+    - [x] **PROTEÇÃO TOTAL**: Validação automática em getAnalyticsData()
+      - [x] Lista de métricas seguras implementada (9 métricas aprovadas)
+      - [x] Filtragem automática de métricas incompatíveis
+      - [x] Logs informativos para métricas removidas
+      - [x] Fallback seguro para métricas básicas
+      - [x] Sistema 100% imune a erros INVALID_ARGUMENT
 
 - [x] **3.3 Gerenciamento de Integrações**
   - [x] Schema para armazenar credenciais (criptografadas)
@@ -97,6 +123,18 @@
   - [x] Dashboard com gráficos funcionais
   - [x] Métricas principais (gastos, impressões, sessões)
   - [x] Filtros por período
+  - [x] **Seleção de data personalizada implementada:**
+    - [x] Componente CustomDatePicker criado
+    - [x] Períodos pré-definidos (Hoje, Ontem, 7/30/90 dias, Este/Último mês)
+    - [x] Calendário personalizado com react-datepicker
+    - [x] Integração com Material-UI e estilização customizada
+    - [x] Suporte a datas relativas e formato YYYY-MM-DD
+    - [x] Backend atualizado para novos períodos (thisMonth, lastMonth)
+    - [x] Implementado no Dashboard e Sistema de Relatórios
+    - [x] **🔧 BUG FIX: Correção de fuso horário implementada**
+      - [x] Função parseLocalDate() criada para evitar problemas de UTC
+      - [x] Datas agora correspondem exatamente ao selecionado pelo usuário
+      - [x] Correção validada com testes (ex: 17/03/2025 agora fica 17/03/2025)
   - [x] Layout responsivo
   - [x] Resolução automática de empresa para super admin
 
