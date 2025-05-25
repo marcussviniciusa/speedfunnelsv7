@@ -321,6 +321,15 @@ const Companies = () => {
                     <TableCell align="center">
                       <IconButton
                         size="small"
+                        onClick={() => window.open(`/admin/users?company=${company._id}`, '_blank')}
+                        disabled={loading}
+                        title="Ver Usuários"
+                        color="primary"
+                      >
+                        <PeopleIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
                         onClick={() => handleEditCompany(company)}
                         disabled={loading}
                         title="Editar Empresa"

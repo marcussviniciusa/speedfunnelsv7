@@ -1,0 +1,14 @@
+🔄 Resetando senha do super admin...
+✅ Senha do super admin resetada para: Admin123!
+
+🔐 Testando login do super admin...
+- Teste direto no DB: ✅ PASSOU
+
+🌐 Testando login via API...
+✅ Login via API funcionou!
+
+👥 Testando criação de usuário...
+✅ 3 empresas encontradas
+📝 Criando usuário: debug-test@teste.com
+🔑 Senha: DebugTest123!
+❌ Erro na criação: Email já está em uso

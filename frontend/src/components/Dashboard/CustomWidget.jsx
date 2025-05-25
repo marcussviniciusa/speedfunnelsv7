@@ -124,18 +124,59 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
 
   // Formatadores
   const formatCurrency = (value) => {
+    const numericValue = parseFloat(value) || 0;
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
       currency: 'BRL'
-    }).format(value);
+    }).format(numericValue);
   };
 
   const formatNumber = (value) => {
-    return new Intl.NumberFormat('pt-BR').format(value);
+    const numericValue = parseFloat(value) || 0;
+    return new Intl.NumberFormat('pt-BR').format(numericValue);
   };
 
   const formatPercentage = (value) => {
-    return `${value.toFixed(2)}%`;
+    const numericValue = parseFloat(value) || 0;
+    return `${numericValue.toFixed(2)}%`;
+  };
+
+  // Helper para obter nome amigável da métrica
+  const getMetricDisplayName = (metric) => {
+    const metricId = getMetricId(metric);
+    
+    const metricNames = {
+      // Meta Ads - Básicas
+      'meta_spend': 'Gasto',
+      'meta_impressions': 'Impressões',
+      'meta_clicks': 'Cliques',
+      'meta_ctr': 'CTR',
+      'meta_cpm': 'CPM',
+      'meta_reach': 'Alcance',
+      
+      // Meta Ads - Conversões
+      'meta_purchases': 'Compras',
+      'meta_purchase_value': 'Valor das Compras',
+      'meta_add_to_cart': 'Carrinho',
+      'meta_view_content': 'Visualizações',
+      'meta_leads': 'Leads',
+      'meta_initiate_checkout': 'Checkout',
+      
+      // Google Analytics
+      'ga_sessions': 'Sessões',
+      'ga_users': 'Usuários',
+      'ga_pageviews': 'Visualizações de Página',
+      'ga_bounce_rate': 'Taxa de Rejeição',
+      
+      // Combinadas
+      'combined_roi': 'ROI',
+      'combined_cost_per_session': 'Custo por Sessão',
+      
+      // Temporal
+      'date_dimension': 'Data'
+    };
+
+    return metricNames[metricId] || metricId.replace('_', ' ').toUpperCase();
   };
 
   // Helper para extrair ID da métrica
@@ -336,8 +377,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
     console.log('🔍 [CustomWidget] prepareChartData() chamado');
     console.log('🔍 [CustomWidget] widget.metrics:', widget.metrics);
     console.log('🔍 [CustomWidget] widget.type:', widget.type);
-    console.log('🔍 [CustomWidget] data.metaAds?.accounts:', data.metaAds?.accounts);
-    console.log('🔍 [CustomWidget] data.googleAnalytics?.accounts:', data.googleAnalytics?.accounts);
+    console.log('🔍 [CustomWidget] widget.isTemporalChart:', widget.isTemporalChart);
     
     if (!widget.metrics || widget.metrics.length === 0) {
       console.log('❌ [CustomWidget] Nenhuma métrica definida');
@@ -345,174 +385,289 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
     }
 
     if (widget.type === 'chart') {
-      // Para gráficos, criar dados baseados nas contas
-      const chartData = [];
-
-      // 🔧 CORREÇÃO: Verificar se há métricas do Meta Ads antes de processar
-      const hasMetaMetrics = widget.metrics.some(metric => {
+      // 🔧 NOVO: Verificar se é gráfico temporal
+      const isTemporalChart = widget.isTemporalChart || widget.metrics.some(metric => {
         const metricId = getMetricId(metric);
-        return metricId.startsWith('meta_');
+        return metricId === 'date_dimension';
       });
       
-      // 🔧 CORREÇÃO: Verificar se há métricas do Google Analytics antes de processar
-      const hasGAMetrics = widget.metrics.some(metric => {
-        const metricId = getMetricId(metric);
-        return metricId.startsWith('ga_');
-      });
-
-      console.log('🔍 [CustomWidget] hasMetaMetrics:', hasMetaMetrics);
-      console.log('🔍 [CustomWidget] hasGAMetrics:', hasGAMetrics);
-
-      // Processar contas Meta Ads apenas se houver métricas Meta
-      if (hasMetaMetrics && data.metaAds?.accounts && data.metaAds.accounts.length > 0) {
-        console.log('🔍 [CustomWidget] Processando contas Meta Ads...');
-        data.metaAds.accounts.forEach(account => {
-          const item = { name: account.accountName || 'Conta Meta' };
-          widget.metrics.forEach(metric => {
-            const metricId = getMetricId(metric);
-            console.log(`🔍 [CustomWidget] Processando métrica ${metricId} para conta ${account.accountName}`);
-            
-            // Processar apenas métricas do Meta Ads
-            if (metricId.startsWith('meta_')) {
-              switch (metricId) {
-                case 'meta_spend':
-                  item.spend = account.spend || 0;
-                  break;
-                case 'meta_impressions':
-                  item.impressions = account.impressions || 0;
-                  break;
-                case 'meta_clicks':
-                  item.clicks = account.clicks || 0;
-                  break;
-                case 'meta_ctr':
-                  item.ctr = account.ctr || 0;
-                  break;
-                case 'meta_cpm':
-                  item.cpm = account.cpm || 0;
-                  break;
-                case 'meta_reach':
-                  item.reach = account.reach || 0;
-                  break;
-                case 'meta_purchases':
-                  item.purchases = account.purchases || 0;
-                  break;
-                case 'meta_purchase_value':
-                  item.purchaseValue = account.purchaseValue || 0;
-                  break;
-                case 'meta_add_to_cart':
-                  item.addToCart = account.addToCart || 0;
-                  break;
-                case 'meta_view_content':
-                  item.viewContent = account.viewContent || 0;
-                  break;
-                case 'meta_leads':
-                  item.leads = account.leads || 0;
-                  break;
-                case 'meta_initiate_checkout':
-                  item.initiateCheckout = account.initiateCheckout || 0;
-                  break;
-              }
-            }
-          });
-          chartData.push(item);
-        });
+      console.log('🔍 [CustomWidget] isTemporalChart detectado:', isTemporalChart);
+      
+      if (isTemporalChart) {
+        return prepareTemporalChartData();
+      } else {
+        return prepareStandardChartData();
       }
-
-      // Processar contas Google Analytics apenas se houver métricas GA
-      if (hasGAMetrics && data.googleAnalytics?.accounts && data.googleAnalytics.accounts.length > 0) {
-        console.log('🔍 [CustomWidget] Processando contas Google Analytics...');
-        data.googleAnalytics.accounts.forEach(account => {
-          const item = { name: account.propertyName || 'Propriedade GA' };
-          widget.metrics.forEach(metric => {
-            const metricId = getMetricId(metric);
-            console.log(`🔍 [CustomWidget] Processando métrica ${metricId} para propriedade ${account.propertyName}`);
-            
-            // Processar apenas métricas do Google Analytics
-            if (metricId.startsWith('ga_')) {
-              switch (metricId) {
-                case 'ga_sessions':
-                  item.sessions = account.sessions || 0;
-                  break;
-                case 'ga_users':
-                  item.users = account.users || 0;
-                  break;
-                case 'ga_pageviews':
-                  item.pageviews = account.pageviews || 0;
-                  break;
-              }
-            }
-          });
-          chartData.push(item);
-        });
-      }
-
-      // 🔧 CORREÇÃO: Se não há contas mas há dados agregados, criar entrada única
-      if (chartData.length === 0) {
-        console.log('🔍 [CustomWidget] Nenhuma conta individual, criando dados agregados...');
-        const aggregatedItem = { name: 'Total' };
-        
-        widget.metrics.forEach(metric => {
-          const metricId = getMetricId(metric);
-          const value = getMetricValue(metric);
-          console.log(`🔍 [CustomWidget] Valor agregado para ${metricId}: ${value}`);
-          
-          switch (metricId) {
-            case 'meta_spend':
-              aggregatedItem.spend = value;
-              break;
-            case 'meta_impressions':
-              aggregatedItem.impressions = value;
-              break;
-            case 'meta_clicks':
-              aggregatedItem.clicks = value;
-              break;
-            case 'meta_ctr':
-              aggregatedItem.ctr = value;
-              break;
-            case 'meta_cpm':
-              aggregatedItem.cpm = value;
-              break;
-            case 'meta_reach':
-              aggregatedItem.reach = value;
-              break;
-            case 'ga_sessions':
-              aggregatedItem.sessions = value;
-              break;
-            case 'ga_users':
-              aggregatedItem.users = value;
-              break;
-            case 'ga_pageviews':
-              aggregatedItem.pageviews = value;
-              break;
-            case 'meta_purchases':
-              aggregatedItem.purchases = value;
-              break;
-            case 'meta_purchase_value':
-              aggregatedItem.purchaseValue = value;
-              break;
-            case 'meta_add_to_cart':
-              aggregatedItem.addToCart = value;
-              break;
-            case 'meta_view_content':
-              aggregatedItem.viewContent = value;
-              break;
-            case 'meta_leads':
-              aggregatedItem.leads = value;
-              break;
-            case 'meta_initiate_checkout':
-              aggregatedItem.initiateCheckout = value;
-              break;
-          }
-        });
-        
-        chartData.push(aggregatedItem);
-      }
-
-      console.log('🔍 [CustomWidget] Dados do gráfico preparados:', chartData);
-      return chartData;
     }
 
     return [];
+  };
+
+  // 🔧 NOVO: Preparar dados para gráficos temporais
+  const prepareTemporalChartData = () => {
+    console.log('📅 [CustomWidget] prepareTemporalChartData() chamado');
+    
+    const chartData = [];
+    const temporalData = data.temporal;
+    
+    if (!temporalData) {
+      console.log('❌ [CustomWidget] Nenhum dado temporal disponível');
+      return [];
+    }
+    
+    // Combinar dados temporais do Meta Ads e GA
+    const allTemporalData = [];
+    
+    // Processar dados temporais do Meta Ads
+    if (temporalData.metaAds && temporalData.metaAds.length > 0) {
+      console.log('📅 [CustomWidget] Processando dados temporais Meta Ads:', temporalData.metaAds.length, 'registros');
+      
+      temporalData.metaAds.forEach(dayData => {
+        const existingEntry = allTemporalData.find(entry => entry.date === dayData.date);
+        
+        if (existingEntry) {
+          // Somar valores do mesmo dia
+          existingEntry.spend = (existingEntry.spend || 0) + dayData.spend;
+          existingEntry.impressions = (existingEntry.impressions || 0) + dayData.impressions;
+          existingEntry.clicks = (existingEntry.clicks || 0) + dayData.clicks;
+          existingEntry.purchases = (existingEntry.purchases || 0) + dayData.purchases;
+          existingEntry.leads = (existingEntry.leads || 0) + dayData.leads;
+          existingEntry.purchaseValue = (existingEntry.purchaseValue || 0) + dayData.purchaseValue;
+          existingEntry.addToCart = (existingEntry.addToCart || 0) + dayData.addToCart;
+          existingEntry.viewContent = (existingEntry.viewContent || 0) + dayData.viewContent;
+          existingEntry.initiateCheckout = (existingEntry.initiateCheckout || 0) + dayData.initiateCheckout;
+        } else {
+          allTemporalData.push({
+            date: dayData.date,
+            dateDisplay: dayData.dateDisplay || new Date(dayData.date).toLocaleDateString('pt-BR'),
+            name: dayData.dateDisplay || new Date(dayData.date).toLocaleDateString('pt-BR'),
+            spend: dayData.spend || 0,
+            impressions: dayData.impressions || 0,
+            clicks: dayData.clicks || 0,
+            purchases: dayData.purchases || 0,
+            leads: dayData.leads || 0,
+            purchaseValue: dayData.purchaseValue || 0,
+            addToCart: dayData.addToCart || 0,
+            viewContent: dayData.viewContent || 0,
+            initiateCheckout: dayData.initiateCheckout || 0,
+            // Placeholder para dados GA (serão adicionados se disponíveis)
+            sessions: 0,
+            users: 0,
+            pageviews: 0
+          });
+        }
+      });
+    }
+    
+    // Processar dados temporais do Google Analytics (se implementado no futuro)
+    if (temporalData.googleAnalytics && temporalData.googleAnalytics.length > 0) {
+      console.log('📅 [CustomWidget] Processando dados temporais GA:', temporalData.googleAnalytics.length, 'registros');
+      
+      temporalData.googleAnalytics.forEach(dayData => {
+        const existingEntry = allTemporalData.find(entry => entry.date === dayData.date);
+        
+        if (existingEntry) {
+          existingEntry.sessions = (existingEntry.sessions || 0) + dayData.sessions;
+          existingEntry.users = (existingEntry.users || 0) + dayData.users;
+          existingEntry.pageviews = (existingEntry.pageviews || 0) + dayData.pageviews;
+        } else {
+          allTemporalData.push({
+            date: dayData.date,
+            dateDisplay: dayData.dateDisplay || new Date(dayData.date).toLocaleDateString('pt-BR'),
+            name: dayData.dateDisplay || new Date(dayData.date).toLocaleDateString('pt-BR'),
+            sessions: dayData.sessions || 0,
+            users: dayData.users || 0,
+            pageviews: dayData.pageviews || 0,
+            // Placeholder para dados Meta
+            spend: 0,
+            impressions: 0,
+            clicks: 0,
+            purchases: 0,
+            leads: 0
+          });
+        }
+      });
+    }
+    
+    // Ordenar por data
+    allTemporalData.sort((a, b) => new Date(a.date) - new Date(b.date));
+    
+    console.log('📅 [CustomWidget] Dados temporais preparados:', allTemporalData.length, 'dias');
+    console.log('📅 [CustomWidget] Amostra dos dados:', allTemporalData.slice(0, 3));
+    
+    return allTemporalData;
+  };
+
+  // 🔧 RENOMEADO: Preparar dados para gráficos padrão (não temporais)
+  const prepareStandardChartData = () => {
+    console.log('🔍 [CustomWidget] prepareStandardChartData() chamado');
+    console.log('🔍 [CustomWidget] data.metaAds?.accounts:', data.metaAds?.accounts);
+    console.log('🔍 [CustomWidget] data.googleAnalytics?.accounts:', data.googleAnalytics?.accounts);
+    
+    const chartData = [];
+
+    // 🔧 CORREÇÃO: Verificar se há métricas do Meta Ads antes de processar
+    const hasMetaMetrics = widget.metrics.some(metric => {
+      const metricId = getMetricId(metric);
+      return metricId.startsWith('meta_');
+    });
+    
+    // 🔧 CORREÇÃO: Verificar se há métricas do Google Analytics antes de processar
+    const hasGAMetrics = widget.metrics.some(metric => {
+      const metricId = getMetricId(metric);
+      return metricId.startsWith('ga_');
+    });
+
+    console.log('🔍 [CustomWidget] hasMetaMetrics:', hasMetaMetrics);
+    console.log('🔍 [CustomWidget] hasGAMetrics:', hasGAMetrics);
+
+    // Processar contas Meta Ads apenas se houver métricas Meta
+    if (hasMetaMetrics && data.metaAds?.accounts && data.metaAds.accounts.length > 0) {
+      console.log('🔍 [CustomWidget] Processando contas Meta Ads...');
+      data.metaAds.accounts.forEach(account => {
+        const item = { name: account.accountName || 'Conta Meta' };
+        widget.metrics.forEach(metric => {
+          const metricId = getMetricId(metric);
+          console.log(`🔍 [CustomWidget] Processando métrica ${metricId} para conta ${account.accountName}`);
+          
+          // Processar apenas métricas do Meta Ads
+          if (metricId.startsWith('meta_')) {
+            switch (metricId) {
+              case 'meta_spend':
+                item.spend = account.spend || 0;
+                break;
+              case 'meta_impressions':
+                item.impressions = account.impressions || 0;
+                break;
+              case 'meta_clicks':
+                item.clicks = account.clicks || 0;
+                break;
+              case 'meta_ctr':
+                item.ctr = account.ctr || 0;
+                break;
+              case 'meta_cpm':
+                item.cpm = account.cpm || 0;
+                break;
+              case 'meta_reach':
+                item.reach = account.reach || 0;
+                break;
+              case 'meta_purchases':
+                item.purchases = account.purchases || 0;
+                break;
+              case 'meta_purchase_value':
+                item.purchaseValue = account.purchaseValue || 0;
+                break;
+              case 'meta_add_to_cart':
+                item.addToCart = account.addToCart || 0;
+                break;
+              case 'meta_view_content':
+                item.viewContent = account.viewContent || 0;
+                break;
+              case 'meta_leads':
+                item.leads = account.leads || 0;
+                break;
+              case 'meta_initiate_checkout':
+                item.initiateCheckout = account.initiateCheckout || 0;
+                break;
+            }
+          }
+        });
+        chartData.push(item);
+      });
+    }
+
+    // Processar contas Google Analytics apenas se houver métricas GA
+    if (hasGAMetrics && data.googleAnalytics?.accounts && data.googleAnalytics.accounts.length > 0) {
+      console.log('🔍 [CustomWidget] Processando contas Google Analytics...');
+      data.googleAnalytics.accounts.forEach(account => {
+        const item = { name: account.propertyName || 'Propriedade GA' };
+        widget.metrics.forEach(metric => {
+          const metricId = getMetricId(metric);
+          console.log(`🔍 [CustomWidget] Processando métrica ${metricId} para propriedade ${account.propertyName}`);
+          
+          // Processar apenas métricas do Google Analytics
+          if (metricId.startsWith('ga_')) {
+            switch (metricId) {
+              case 'ga_sessions':
+                item.sessions = account.sessions || 0;
+                break;
+              case 'ga_users':
+                item.users = account.users || 0;
+                break;
+              case 'ga_pageviews':
+                item.pageviews = account.pageviews || 0;
+                break;
+            }
+          }
+        });
+        chartData.push(item);
+      });
+    }
+
+    // 🔧 CORREÇÃO: Se não há contas mas há dados agregados, criar entrada única
+    if (chartData.length === 0) {
+      console.log('🔍 [CustomWidget] Nenhuma conta individual, criando dados agregados...');
+      const aggregatedItem = { name: 'Total' };
+      
+      widget.metrics.forEach(metric => {
+        const metricId = getMetricId(metric);
+        const value = getMetricValue(metric);
+        console.log(`🔍 [CustomWidget] Valor agregado para ${metricId}: ${value}`);
+        
+        switch (metricId) {
+          case 'meta_spend':
+            aggregatedItem.spend = value;
+            break;
+          case 'meta_impressions':
+            aggregatedItem.impressions = value;
+            break;
+          case 'meta_clicks':
+            aggregatedItem.clicks = value;
+            break;
+          case 'meta_ctr':
+            aggregatedItem.ctr = value;
+            break;
+          case 'meta_cpm':
+            aggregatedItem.cpm = value;
+            break;
+          case 'meta_reach':
+            aggregatedItem.reach = value;
+            break;
+          case 'ga_sessions':
+            aggregatedItem.sessions = value;
+            break;
+          case 'ga_users':
+            aggregatedItem.users = value;
+            break;
+          case 'ga_pageviews':
+            aggregatedItem.pageviews = value;
+            break;
+          case 'meta_purchases':
+            aggregatedItem.purchases = value;
+            break;
+          case 'meta_purchase_value':
+            aggregatedItem.purchaseValue = value;
+            break;
+          case 'meta_add_to_cart':
+            aggregatedItem.addToCart = value;
+            break;
+          case 'meta_view_content':
+            aggregatedItem.viewContent = value;
+            break;
+          case 'meta_leads':
+            aggregatedItem.leads = value;
+            break;
+          case 'meta_initiate_checkout':
+            aggregatedItem.initiateCheckout = value;
+            break;
+        }
+      });
+      
+      chartData.push(aggregatedItem);
+    }
+
+    console.log('🔍 [CustomWidget] Dados do gráfico preparados:', chartData);
+    return chartData;
   };
 
   // Renderizar widget tipo gráfico
@@ -565,7 +720,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     key={getMetricKey(metric, index)}
                     dataKey={dataKey}
                     fill={widget.color || colors[index % colors.length]}
-                    name={metricId.replace('_', ' ').toUpperCase()}
+                    name={getMetricDisplayName(metric)}
                   />
                 );
               })}
@@ -593,7 +748,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     type="monotone"
                     dataKey={dataKey}
                     stroke={widget.color || colors[index % colors.length]}
-                    name={metricId.replace('_', ' ').toUpperCase()}
+                    name={getMetricDisplayName(metric)}
                   />
                 );
               })}
@@ -621,7 +776,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     type="monotone"
                     dataKey={dataKey}
                     fill={widget.color || colors[index % colors.length]}
-                    name={metricId.replace('_', ' ').toUpperCase()}
+                    name={getMetricDisplayName(metric)}
                   />
                 );
               })}
@@ -632,7 +787,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
       case 'pie':
         console.log('🔍 [CustomWidget] Renderizando gráfico de pizza');
         const pieData = widget.metrics.map((metric, index) => ({
-          name: getMetricId(metric).replace('_', ' ').toUpperCase(),
+          name: getMetricDisplayName(metric),
           value: getMetricValue(metric),
           originalMetric: metric,
           index: index
@@ -680,7 +835,7 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     key={getMetricKey(metric, index)}
                     dataKey={dataKey}
                     fill={widget.color || colors[index % colors.length]}
-                    name={metricId.replace('_', ' ').toUpperCase()}
+                    name={getMetricDisplayName(metric)}
                   />
                 );
               })}
@@ -819,6 +974,24 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     case 'meta_reach':
                       columnLabel = 'Alcance';
                       break;
+                    case 'meta_purchases':
+                      columnLabel = 'Compras';
+                      break;
+                    case 'meta_purchase_value':
+                      columnLabel = 'Valor das Compras';
+                      break;
+                    case 'meta_add_to_cart':
+                      columnLabel = 'Carrinho';
+                      break;
+                    case 'meta_view_content':
+                      columnLabel = 'Visualizações';
+                      break;
+                    case 'meta_leads':
+                      columnLabel = 'Leads';
+                      break;
+                    case 'meta_initiate_checkout':
+                      columnLabel = 'Checkout';
+                      break;
                     case 'ga_sessions':
                       columnLabel = 'Sessões';
                       break;
@@ -828,8 +1001,17 @@ const CustomWidget = ({ widget, data = {}, loading = false }) => {
                     case 'ga_pageviews':
                       columnLabel = 'Visualizações';
                       break;
+                    case 'ga_bounce_rate':
+                      columnLabel = 'Taxa de Rejeição';
+                      break;
+                    case 'combined_roi':
+                      columnLabel = 'ROI';
+                      break;
+                    case 'combined_cost_per_session':
+                      columnLabel = 'Custo por Sessão';
+                      break;
                     default:
-                      columnLabel = metricId.replace('_', ' ').toUpperCase();
+                      columnLabel = getMetricDisplayName(metric);
                   }
                   
                   return <TableCell key={getMetricKey(metric, widget.metrics.indexOf(metric))} align="right">{columnLabel}</TableCell>;

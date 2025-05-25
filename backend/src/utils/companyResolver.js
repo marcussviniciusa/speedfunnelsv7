@@ -22,7 +22,7 @@ export const resolveCompanyId = async (req) => {
     }
   } else {
     // Para usuários normais, usar a empresa associada
-    if (!req.user.company || !req.user.company._id) {
+    if (!req.user.company) {
       throw new Error('Usuário não possui empresa associada');
     }
     companyId = req.user.company._id;

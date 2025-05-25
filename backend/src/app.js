@@ -58,6 +58,7 @@ import metaAdsRoutes from './routes/metaAds.js';
 import googleAnalyticsRoutes from './routes/googleAnalytics.js';
 import dashboardRoutes from './routes/dashboard.js';
 import reportsRoutes from './routes/reports.js';
+import sharedReportsRoutes from './routes/sharedReports.js';
 import pdfRoutes from './routes/pdfRoutes.js';
 
 // Routes principais
@@ -70,6 +71,7 @@ app.get('/api', (req, res) => {
       admin: '/api/admin',
       dashboard: '/api/dashboard',
       reports: '/api/reports',
+      sharedReports: '/api/shared-reports',
       meta: '/api/meta-ads',
       analytics: '/api/google-analytics',
       pdf: '/api/pdf'
@@ -84,6 +86,7 @@ app.use('/api/meta-ads', metaAdsRoutes);
 app.use('/api/google-analytics', googleAnalyticsRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/reports', reportsRoutes);
+app.use('/api/shared-reports', sharedReportsRoutes);
 app.use('/api/pdf', pdfRoutes);
 
 // 404 handler

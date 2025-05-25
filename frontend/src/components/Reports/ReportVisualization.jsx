@@ -26,7 +26,8 @@ import {
   TableChart as TableIcon,
   BarChart as ChartIcon,
   TrendingUp as TrendingUpIcon,
-  TrendingDown as TrendingDownIcon
+  TrendingDown as TrendingDownIcon,
+  Dashboard as WidgetIcon
 } from '@mui/icons-material';
 import {
   BarChart,
@@ -45,9 +46,18 @@ import {
   Area,
   AreaChart
 } from 'recharts';
+import CustomWidget from '../Dashboard/CustomWidget';
+import ReportShareDialog from './ReportShareDialog';
 
-const ReportVisualization = ({ data, config, loading }) => {
+const ReportVisualization = ({ data, config, loading, isPublicView = false }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
+
+  // Verificar se há widgets configurados
+  const hasWidgets = data?.widgets && data.widgets.length > 0;
+  
+  console.log('🔍 [ReportVisualization] data.widgets:', data?.widgets);
+  console.log('🔍 [ReportVisualization] hasWidgets:', hasWidgets);
 
   if (!data) {
     return (
@@ -357,6 +367,90 @@ const ReportVisualization = ({ data, config, loading }) => {
     </Box>
   );
 
+  // Renderizar widgets
+  const renderWidgets = () => {
+    // Função para mapear tamanho do widget para Grid
+    const getGridSize = (size) => {
+      switch (size) {
+        case 'small':
+          return { xs: 12, sm: 6, md: 4 };
+        case 'medium':
+          return { xs: 12, sm: 6, md: 6 };
+        case 'large':
+          return { xs: 12 };
+        default:
+          return { xs: 12, sm: 6, md: 6 };
+      }
+    };
+
+    return (
+      <Box>
+        <Alert severity="info" sx={{ mb: 3 }}>
+          📊 Exibindo {data.widgets.length} widget{data.widgets.length > 1 ? 's' : ''} configurado{data.widgets.length > 1 ? 's' : ''} para este relatório
+        </Alert>
+
+        {/* Grid de Widgets */}
+        <Grid container spacing={3}>
+          {data.widgets.map((widget, index) => {
+            const gridSize = getGridSize(widget.size);
+            
+            return (
+              <Grid 
+                key={widget.id || `widget-${index}`}
+                size={gridSize}
+              >
+                <CustomWidget
+                  widget={widget}
+                  data={data}
+                  loading={loading}
+                />
+              </Grid>
+            );
+          })}
+        </Grid>
+
+        {/* Resumo dos widgets */}
+        <Paper sx={{ p: 2, mt: 3, bgcolor: 'grey.50' }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Resumo dos Widgets Configurados
+          </Typography>
+          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mt: 1 }}>
+            {data.widgets.reduce((acc, widget) => {
+              const typeCount = acc.find(item => item.type === widget.type);
+              if (typeCount) {
+                typeCount.count++;
+              } else {
+                acc.push({ type: widget.type, count: 1 });
+              }
+              return acc;
+            }, []).map(({ type, count }) => {
+              const typeLabels = {
+                'card': 'Cards',
+                'chart': 'Gráficos', 
+                'table': 'Tabelas'
+              };
+              
+              const typeColors = {
+                'card': 'warning',
+                'chart': 'primary',
+                'table': 'secondary'
+              };
+              
+              return (
+                <Chip
+                  key={type}
+                  label={`${count} ${typeLabels[type] || type}`}
+                  color={typeColors[type] || 'default'}
+                  size="small"
+                />
+              );
+            })}
+          </Box>
+        </Paper>
+      </Box>
+    );
+  };
+
   return (
     <Box>
       {/* Cabeçalho */}
@@ -385,18 +479,28 @@ const ReportVisualization = ({ data, config, loading }) => {
           </Box>
         </Box>
         
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Tooltip title="Exportar Relatório">
-            <IconButton color="primary">
-              <ExportIcon />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Compartilhar">
-            <IconButton color="primary">
-              <ShareIcon />
-            </IconButton>
-          </Tooltip>
-        </Box>
+        {!isPublicView && (
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Tooltip title="Exportar Relatório">
+              <IconButton color="primary">
+                <ExportIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Compartilhar por URL Pública">
+              <IconButton 
+                color="primary"
+                onClick={() => setShareDialogOpen(true)}
+                sx={{ 
+                  bgcolor: 'primary.light', 
+                  color: 'primary.contrastText',
+                  '&:hover': { bgcolor: 'primary.main' }
+                }}
+              >
+                <ShareIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        )}
       </Box>
 
       {/* Cards de resumo */}
@@ -412,12 +516,14 @@ const ReportVisualization = ({ data, config, loading }) => {
         >
           <Tab icon={<ChartIcon />} label="Gráficos" />
           <Tab icon={<TableIcon />} label="Tabelas" />
+          {hasWidgets && <Tab icon={<WidgetIcon />} label={`Widgets (${data.widgets.length})`} />}
         </Tabs>
       </Paper>
 
       {/* Conteúdo das abas */}
       {activeTab === 0 && renderCharts()}
       {activeTab === 1 && renderTables()}
+      {hasWidgets && activeTab === 2 && renderWidgets()}
 
       {/* Informações do relatório */}
       <Paper sx={{ p: 2, mt: 3, bgcolor: 'grey.50' }}>
@@ -431,6 +537,20 @@ const ReportVisualization = ({ data, config, loading }) => {
           <strong>Gerado em:</strong> {new Date().toLocaleString('pt-BR')}
         </Typography>
       </Paper>
+
+      {/* Dialog de Compartilhamento - só na view privada */}
+      {!isPublicView && (
+        <ReportShareDialog
+          open={shareDialogOpen}
+          onClose={() => setShareDialogOpen(false)}
+          reportData={data}
+          reportConfig={config}
+          onSuccess={(shareResult) => {
+            console.log('✅ Relatório compartilhado:', shareResult);
+            // Opcional: mostrar notificação ou redirecionar
+          }}
+        />
+      )}
     </Box>
   );
 };

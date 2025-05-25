@@ -67,9 +67,22 @@ export const adminAPI = {
   updateCompany: (id, data) => api.put(`/admin/companies/${id}`, data),
   deleteCompany: (id) => api.delete(`/admin/companies/${id}`),
   
+  // Usuários
+  getAllUsers: (params) => api.get('/admin/users', { params }),
+  createUser: (data) => api.post('/admin/users', data),
+  getUserById: (id) => api.get(`/admin/users/${id}`),
+  updateUser: (id, data) => api.put(`/admin/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/admin/users/${id}`),
+  updateUserRole: (id, data) => api.put(`/admin/users/${id}/role`, data),
+  updateUserStatus: (id, data) => api.put(`/admin/users/${id}/status`, data),
+  resetUserPassword: (id, data) => api.put(`/admin/users/${id}/password`, data),
+  deleteUserPermanently: (id) => api.delete(`/admin/users/${id}/permanent`),
+  
   // Usuários da empresa
   getCompanyUsers: (companyId, params) => 
-    api.get(`/admin/companies/${companyId}/users`, { params })
+    api.get(`/admin/companies/${companyId}/users`, { params }),
+  createCompanyUser: (companyId, data) => 
+    api.post(`/admin/companies/${companyId}/users`, data)
 };
 
 // Serviços Meta Ads
@@ -123,6 +136,38 @@ export const reportsAPI = {
   getAvailableFields: () => api.get('/reports/fields'),
   getPredefinedReports: () => api.get('/reports/predefined'),
   getSegmentationOptions: () => api.get('/reports/segmentation-options')
+};
+
+// Serviços de Relatórios Compartilhados
+export const sharedReportsAPI = {
+  // Criar novo compartilhamento
+  createSharedReport: (data) => api.post('/shared-reports', data),
+  
+  // Listar relatórios compartilhados da empresa
+  listSharedReports: (params = {}) => api.get('/shared-reports', { params }),
+  
+  // Acessar relatório público (sem autenticação)
+  getPublicReport: (shareId, password = null) => {
+    const config = { 
+      headers: {},
+      validateStatus: (status) => status < 500 // Aceitar 401/404/410 como respostas válidas
+    };
+    
+    if (password) {
+      return axios.post(`${API_BASE_URL}/shared-reports/public/${shareId}`, { password }, config);
+    } else {
+      return axios.get(`${API_BASE_URL}/shared-reports/public/${shareId}`, config);
+    }
+  },
+  
+  // Atualizar configurações de compartilhamento
+  updateSharedReport: (shareId, data) => api.put(`/shared-reports/${shareId}`, data),
+  
+  // Deletar relatório compartilhado
+  deleteSharedReport: (shareId) => api.delete(`/shared-reports/${shareId}`),
+  
+  // Obter estatísticas detalhadas
+  getReportStats: (shareId) => api.get(`/shared-reports/${shareId}/stats`)
 };
 
 export default api; 

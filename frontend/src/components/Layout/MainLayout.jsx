@@ -23,6 +23,7 @@ import {
   Menu as MenuIcon,
   Dashboard as DashboardIcon,
   Business as BusinessIcon,
+  People as PeopleIcon,
   Analytics as AnalyticsIcon,
   Facebook as FacebookIcon,
   Assessment as ReportsIcon,
@@ -92,6 +93,12 @@ const MainLayout = ({ children }) => {
       text: 'Empresas',
       icon: <BusinessIcon />,
       path: '/admin/companies',
+      roles: ['super_admin']
+    },
+    {
+      text: 'Usuários',
+      icon: <PeopleIcon />,
+      path: '/admin/users',
       roles: ['super_admin']
     },
     {

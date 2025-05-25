@@ -218,15 +218,17 @@ const SavedFilters = ({
         </Box>
         <Box sx={{ display: 'flex', gap: 1 }}>
           <Tooltip title="Salvar filtros atuais">
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<SaveIcon />}
-              onClick={handleSaveFilters}
-              disabled={currentFilters.length === 0}
-            >
-              Salvar
-            </Button>
+            <span>
+              <Button
+                variant="contained"
+                size="small"
+                startIcon={<SaveIcon />}
+                onClick={handleSaveFilters}
+                disabled={currentFilters.length === 0}
+              >
+                Salvar
+              </Button>
+            </span>
           </Tooltip>
           
           <Tooltip title="Exportar filtros">

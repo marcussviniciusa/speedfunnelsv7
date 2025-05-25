@@ -350,7 +350,6 @@ const applyGAFilters = (data, filters) => {
 // Gerar relatório com filtros avançados
 export const generateAdvancedReport = async (req, res) => {
   try {
-    const companyId = await resolveCompanyId(req);
     const { 
       reportType = 'combined', 
       startDate = '30daysAgo', 
@@ -359,7 +358,7 @@ export const generateAdvancedReport = async (req, res) => {
       gaAccounts = '',
       segmentation = {},
       simpleFilters = [],
-      queryBuilderRule = null // Manter compatibilidade
+      widgets = []
     } = req.body;
 
     console.log('📊 [generateAdvancedReport] Iniciando geração de relatório:', {
@@ -367,65 +366,94 @@ export const generateAdvancedReport = async (req, res) => {
       startDate,
       endDate,
       simpleFilters: simpleFilters?.length || 0,
-      hasQueryBuilder: !!queryBuilderRule
+      widgets: widgets?.length || 0
     });
 
-    // Processar filtros (priorizar simpleFilters)
-    let processedFilters;
-    if (simpleFilters && simpleFilters.length > 0) {
-      processedFilters = processSimpleFilters(simpleFilters, reportType);
-      console.log('📊 [generateAdvancedReport] Usando filtros simples:', processedFilters);
-    } else if (queryBuilderRule) {
-      processedFilters = processAdvancedFilters(queryBuilderRule, reportType);
-      console.log('📊 [generateAdvancedReport] Usando QueryBuilder (compatibilidade):', processedFilters);
-    } else {
-      processedFilters = { meta: [], ga: [], combined: [] };
-      console.log('📊 [generateAdvancedReport] Nenhum filtro aplicado');
-    }
-
+    const companyId = await resolveCompanyId(req);
+    console.log('📊 [generateAdvancedReport] CompanyId resolvido:', companyId);
+    
     const company = await Company.findById(companyId);
+
     if (!company) {
+      console.error('❌ [generateAdvancedReport] Empresa não encontrada:', companyId);
       return res.status(404).json({
         status: 'error',
         message: 'Empresa não encontrada'
       });
     }
 
-    // Converter datas para formato ISO
-    const sinceDate = convertDateToISO(startDate);
-    const untilDate = convertDateToISO(endDate);
+    console.log('✅ [generateAdvancedReport] Empresa encontrada:', company.name);
 
+    // Preparar dados do relatório
     const reportData = {
       company: {
-        _id: company._id,
+        id: company._id,
         name: company.name
       },
-      dateRange: { startDate, endDate },
-      filters: queryBuilderRule,
-      segmentation,
+      summary: {
+        totalSpend: 0,
+        totalSessions: 0,
+        activeCampaigns: 0,
+        activeProperties: 0
+      },
       metaAds: {
         accounts: [],
+        campaigns: [],
         totalSpend: 0,
         totalImpressions: 0,
         totalClicks: 0,
         totalReach: 0,
-        campaigns: []
+        avgCTR: 0,
+        avgCPM: 0,
+        // Novas métricas de conversão
+        totalPurchases: 0,
+        totalPurchaseValue: 0,
+        totalAddToCart: 0,
+        totalViewContent: 0,
+        totalLeads: 0,
+        totalInitiateCheckout: 0
       },
       googleAnalytics: {
         accounts: [],
+        segments: [],
         totalSessions: 0,
         totalUsers: 0,
         totalPageviews: 0,
-        segments: []
+        avgSessionDuration: 0,
+        bounceRate: 0
       },
-      summary: {
-        activeCampaigns: 0,
-        totalSpend: 0,
-        totalSessions: 0,
-        roi: 0,
-        conversionRate: 0
+      // 🔧 NOVO: Dados temporais
+      temporal: {
+        metaAds: [],
+        googleAnalytics: [],
+        combined: []
+      },
+      widgets: widgets, // Incluir configuração de widgets
+      filters: {
+        applied: simpleFilters,
+        segmentation: segmentation
+      },
+      config: {
+        reportType,
+        startDate,
+        endDate,
+        generatedAt: new Date().toISOString()
       }
     };
+
+    // Converter datas para formato ISO
+    const sinceDate = convertDateToISO(startDate);
+    const untilDate = convertDateToISO(endDate);
+
+    // Processar filtros (priorizar simpleFilters)
+    let processedFilters;
+    if (simpleFilters && simpleFilters.length > 0) {
+      processedFilters = processSimpleFilters(simpleFilters, reportType);
+      console.log('📊 [generateAdvancedReport] Usando filtros simples:', processedFilters);
+    } else {
+      processedFilters = { meta: [], ga: [], combined: [] };
+      console.log('📊 [generateAdvancedReport] Nenhum filtro aplicado');
+    }
 
     // Processar contas Meta Ads se incluídas no relatório
     if (reportType === 'meta' || reportType === 'combined') {
@@ -464,11 +492,59 @@ export const generateAdvancedReport = async (req, res) => {
               'reach',
               'ctr',
               'cpm',
-              'actions',
-              'conversions',
-              'cost_per_result'
+              'actions',  // Ações/Conversões
+              'action_values',  // Valores das conversões
+              'conversions',  // Conversões totais
+              'conversion_values',  // Valores das conversões
+              'cost_per_result'  // Custo por resultado
             ]
           });
+
+          // 🔧 NOVO: Buscar dados temporais se necessário
+          let temporalInsights = null;
+          const needsTemporalData = widgets && widgets.some(w => w.isTemporalChart);
+          
+          if (needsTemporalData) {
+            console.log('📅 [generateAdvancedReport] Buscando dados temporais para widgets...');
+            try {
+              temporalInsights = await account.getInsights([], {
+                level: 'account',
+                time_range: { 
+                  since: sinceDate,
+                  until: untilDate
+                },
+                time_increment: 1, // Dados diários
+                fields: [
+                  'spend',
+                  'impressions', 
+                  'clicks',
+                  'reach',
+                  'ctr',
+                  'cpm',
+                  'actions',
+                  'action_values',
+                  'conversions',
+                  'conversion_values'
+                ]
+              });
+              console.log('📅 [generateAdvancedReport] Dados temporais obtidos:', temporalInsights.length, 'registros');
+            } catch (error) {
+              console.error('❌ [generateAdvancedReport] Erro ao buscar dados temporais:', error);
+            }
+          }
+
+          // Função para extrair métricas de conversão específicas
+          const extractConversionMetric = (actions, actionType) => {
+            if (!actions || !Array.isArray(actions)) return 0;
+            const action = actions.find(a => a.action_type === actionType);
+            return action ? parseFloat(action.value) || 0 : 0;
+          };
+
+          const extractConversionValue = (actionValues, actionType) => {
+            if (!actionValues || !Array.isArray(actionValues)) return 0;
+            const actionValue = actionValues.find(a => a.action_type === actionType);
+            return actionValue ? parseFloat(actionValue.value) || 0 : 0;
+          };
 
           // Aplicar filtros
           const filteredInsights = applyMetaFilters(insights, processedFilters.meta);
@@ -486,7 +562,26 @@ export const generateAdvancedReport = async (req, res) => {
               ctr: parseFloat(insight.ctr) || 0,
               cpm: parseFloat(insight.cpm) || 0,
               conversions: insight.conversions || 0,
-              costPerResult: parseFloat(insight.cost_per_result) || 0
+              costPerResult: parseFloat(insight.cost_per_result) || 0,
+              // Métricas de conversão específicas
+              purchases: extractConversionMetric(insight.actions, 'purchase'),
+              purchaseValue: extractConversionValue(insight.action_values, 'purchase'),
+              addToCart: extractConversionMetric(insight.actions, 'add_to_cart'),
+              addToCartValue: extractConversionValue(insight.action_values, 'add_to_cart'),
+              viewContent: extractConversionMetric(insight.actions, 'view_content'),
+              viewContentValue: extractConversionValue(insight.action_values, 'view_content'),
+              initiateCheckout: extractConversionMetric(insight.actions, 'initiate_checkout'),
+              initiateCheckoutValue: extractConversionValue(insight.action_values, 'initiate_checkout'),
+              leads: extractConversionMetric(insight.actions, 'lead'),
+              leadValue: extractConversionValue(insight.action_values, 'lead'),
+              completeRegistration: extractConversionMetric(insight.actions, 'complete_registration'),
+              completeRegistrationValue: extractConversionValue(insight.action_values, 'complete_registration'),
+              // Conversões personalizadas
+              customConversions: insight.conversions ? parseFloat(insight.conversions) || 0 : 0,
+              customConversionsValue: insight.conversion_values ? parseFloat(insight.conversion_values) || 0 : 0,
+              // Todas as ações para referência
+              allActions: insight.actions || [],
+              allActionValues: insight.action_values || []
             };
 
             reportData.metaAds.campaigns.push(campaignData);
@@ -494,7 +589,50 @@ export const generateAdvancedReport = async (req, res) => {
             reportData.metaAds.totalImpressions += campaignData.impressions;
             reportData.metaAds.totalClicks += campaignData.clicks;
             reportData.metaAds.totalReach += campaignData.reach;
+            
+            // Somar métricas de conversão nos totais
+            reportData.metaAds.totalPurchases = (reportData.metaAds.totalPurchases || 0) + campaignData.purchases;
+            reportData.metaAds.totalPurchaseValue = (reportData.metaAds.totalPurchaseValue || 0) + campaignData.purchaseValue;
+            reportData.metaAds.totalAddToCart = (reportData.metaAds.totalAddToCart || 0) + campaignData.addToCart;
+            reportData.metaAds.totalViewContent = (reportData.metaAds.totalViewContent || 0) + campaignData.viewContent;
+            reportData.metaAds.totalLeads = (reportData.metaAds.totalLeads || 0) + campaignData.leads;
+            reportData.metaAds.totalInitiateCheckout = (reportData.metaAds.totalInitiateCheckout || 0) + campaignData.initiateCheckout;
           });
+
+          // 🔧 NOVO: Processar dados temporais se disponíveis
+          if (temporalInsights && temporalInsights.length > 0) {
+            console.log('📅 [generateAdvancedReport] Processando dados temporais...');
+            
+            temporalInsights.forEach(temporalInsight => {
+              const dateStart = temporalInsight.date_start;
+              const dateStop = temporalInsight.date_stop;
+              
+              const temporalData = {
+                accountId,
+                accountName: metaAccount.accountName,
+                date: dateStart, // Data no formato YYYY-MM-DD
+                dateDisplay: new Date(dateStart).toLocaleDateString('pt-BR'), // Data formatada
+                spend: parseFloat(temporalInsight.spend) || 0,
+                impressions: parseInt(temporalInsight.impressions) || 0,
+                clicks: parseInt(temporalInsight.clicks) || 0,
+                reach: parseInt(temporalInsight.reach) || 0,
+                ctr: parseFloat(temporalInsight.ctr) || 0,
+                cpm: parseFloat(temporalInsight.cpm) || 0,
+                // Métricas de conversão temporais
+                purchases: extractConversionMetric(temporalInsight.actions, 'purchase'),
+                purchaseValue: extractConversionValue(temporalInsight.action_values, 'purchase'),
+                addToCart: extractConversionMetric(temporalInsight.actions, 'add_to_cart'),
+                viewContent: extractConversionMetric(temporalInsight.actions, 'view_content'),
+                leads: extractConversionMetric(temporalInsight.actions, 'lead'),
+                initiateCheckout: extractConversionMetric(temporalInsight.actions, 'initiate_checkout'),
+                conversions: temporalInsight.conversions ? parseFloat(temporalInsight.conversions) || 0 : 0
+              };
+              
+              reportData.temporal.metaAds.push(temporalData);
+            });
+            
+            console.log('📅 [generateAdvancedReport] Dados temporais processados:', reportData.temporal.metaAds.length, 'registros');
+          }
 
         } catch (error) {
           console.error(`Error fetching Meta Ads data for account ${accountId}:`, error);

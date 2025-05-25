@@ -15,6 +15,7 @@
     "@hello-pangea/dnd": "^18.0.1",
     "@mui/icons-material": "^7.1.0",
     "@mui/material": "^7.1.0",
+    "@mui/x-date-pickers": "^8.4.0",
     "@react-querybuilder/material": "^8.7.0",
     "axios": "^1.9.0",
     "date-fns": "^4.1.0",

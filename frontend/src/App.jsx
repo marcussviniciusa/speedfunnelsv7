@@ -11,7 +11,9 @@ import Reports from './components/Reports/Reports';
 import MetaAds from './components/MetaAds/MetaAds';
 import GoogleAnalytics from './components/GoogleAnalytics/GoogleAnalytics';
 import Companies from './components/Admin/Companies';
+import Users from './components/Admin/Users';
 import Settings from './components/Settings/Settings';
+import PublicReportViewer from './components/Public/PublicReportViewer';
 
 // Tema personalizado
 const theme = createTheme({
@@ -101,6 +103,9 @@ function App() {
             {/* Rota de login */}
             <Route path="/login" element={<Login />} />
             
+            {/* Rota pública para relatórios compartilhados */}
+            <Route path="/public/report/:shareId" element={<PublicReportViewer />} />
+            
             {/* Rota raiz - redireciona para dashboard */}
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             
@@ -122,6 +127,15 @@ function App() {
                       element={
                         <ProtectedRoute allowedRoles={['super_admin']}>
                           <Companies />
+                        </ProtectedRoute>
+                      } 
+                    />
+                    
+                    <Route 
+                      path="/admin/users" 
+                      element={
+                        <ProtectedRoute allowedRoles={['super_admin']}>
+                          <Users />
                         </ProtectedRoute>
                       } 
                     />
