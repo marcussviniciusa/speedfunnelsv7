@@ -5,7 +5,8 @@ import {
   getCompanyById,
   updateCompany,
   getCompanyUsers,
-  deleteCompany
+  deleteCompany,
+  deleteCompanyPermanently
 } from '../controllers/adminController.js';
 import {
   getAllUsers,
@@ -36,6 +37,7 @@ router.post('/companies', createCompany);
 router.get('/companies/:id', getCompanyById);
 router.put('/companies/:id', updateCompany);
 router.delete('/companies/:id', deleteCompany);
+router.delete('/companies/:id/permanent', deleteCompanyPermanently);  // Deletar empresa permanentemente
 
 // Rotas de usuários de empresa
 router.get('/companies/:id/users', getCompanyUsers);

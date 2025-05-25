@@ -66,6 +66,7 @@ export const adminAPI = {
   getCompanyById: (id) => api.get(`/admin/companies/${id}`),
   updateCompany: (id, data) => api.put(`/admin/companies/${id}`, data),
   deleteCompany: (id) => api.delete(`/admin/companies/${id}`),
+  deleteCompanyPermanently: (id) => api.delete(`/admin/companies/${id}/permanent`),
   
   // Usuários
   getAllUsers: (params) => api.get('/admin/users', { params }),

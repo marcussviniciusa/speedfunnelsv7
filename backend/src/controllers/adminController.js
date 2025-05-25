@@ -380,4 +380,57 @@ export const deleteCompany = async (req, res) => {
       message: 'Erro interno do servidor'
     });
   }
+};
+
+// Excluir empresa permanentemente (hard delete)
+export const deleteCompanyPermanently = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const company = await Company.findById(id);
+    
+    if (!company) {
+      return res.status(404).json({
+        status: 'error',
+        message: 'Empresa não encontrada'
+      });
+    }
+
+    // Verificar se há usuários vinculados à empresa (ativos ou inativos)
+    const totalUsers = await User.countDocuments({ 
+      company: id 
+    });
+
+    if (totalUsers > 0) {
+      return res.status(400).json({
+        status: 'error',
+        message: `Não é possível excluir permanentemente a empresa. Há ${totalUsers} usuário(s) vinculado(s) a ela. Exclua primeiro todos os usuários.`
+      });
+    }
+
+    // Verificar se há configurações de dashboard vinculadas
+    const DashboardConfig = (await import('../models/DashboardConfig.js')).default;
+    const dashboardConfigs = await DashboardConfig.countDocuments({ 
+      company: id 
+    });
+
+    if (dashboardConfigs > 0) {
+      // Remover todas as configurações de dashboard da empresa
+      await DashboardConfig.deleteMany({ company: id });
+    }
+
+    // Excluir permanentemente a empresa
+    await Company.findByIdAndDelete(id);
+
+    res.json({
+      status: 'success',
+      message: 'Empresa excluída permanentemente com sucesso'
+    });
+  } catch (error) {
+    console.error('Delete company permanently error:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Erro interno do servidor'
+    });
+  }
 }; 

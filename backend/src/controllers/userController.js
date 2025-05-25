@@ -676,13 +676,8 @@ export const deleteUserPermanently = async (req, res) => {
       });
     }
 
-    // Verificar se é super_admin tentando deletar outro super_admin
-    if (user.role === 'super_admin' && req.user.role === 'super_admin') {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Não é possível deletar permanentemente outro super administrador'
-      });
-    }
+    // Permitir que super_admin delete outros super_admins se necessário
+    // (Restrição removida a pedido do usuário)
 
     // Salvar dados do usuário antes de deletar (para logs)
     const deletedUserInfo = {

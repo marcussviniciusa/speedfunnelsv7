@@ -29,6 +29,7 @@ import {
   Add as AddIcon,
   Edit as EditIcon,
   Delete as DeleteIcon,
+  DeleteForever as DeleteForeverIcon,
   Refresh as RefreshIcon,
   Business as BusinessIcon,
   People as PeopleIcon,
@@ -105,19 +106,50 @@ const Companies = () => {
     }
   };
 
-  // Deletar empresa
+  // Deletar empresa (soft delete)
   const handleDeleteCompany = async (companyId) => {
-    if (!window.confirm('Tem certeza que deseja deletar esta empresa?')) return;
+    if (!window.confirm('Tem certeza que deseja desativar esta empresa?')) return;
 
     try {
       setLoading(true);
       setError(null);
       
       await adminAPI.deleteCompany(companyId);
-      setSuccess('Empresa deletada com sucesso!');
+      setSuccess('Empresa desativada com sucesso!');
       await loadCompanies();
     } catch (err) {
-      setError('Erro ao deletar empresa: ' + (err.response?.data?.message || err.message));
+      setError('Erro ao desativar empresa: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Deletar empresa permanentemente (hard delete)
+  const handleDeleteCompanyPermanently = async (companyId, companyName) => {
+    const confirmText = `DELETAR ${companyName.toUpperCase()}`;
+    const userInput = window.prompt(
+      `⚠️ ATENÇÃO: Esta ação é IRREVERSÍVEL!\n\n` +
+      `Você está prestes a excluir PERMANENTEMENTE a empresa "${companyName}".\n` +
+      `Todos os dados relacionados serão perdidos para sempre.\n\n` +
+      `Para confirmar, digite exatamente: ${confirmText}`
+    );
+
+    if (userInput !== confirmText) {
+      if (userInput !== null) {
+        alert('Confirmação incorreta. Operação cancelada.');
+      }
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError(null);
+      
+      await adminAPI.deleteCompanyPermanently(companyId);
+      setSuccess('Empresa excluída permanentemente!');
+      await loadCompanies();
+    } catch (err) {
+      setError('Erro ao excluir empresa: ' + (err.response?.data?.message || err.message));
     } finally {
       setLoading(false);
     }
@@ -340,10 +372,20 @@ const Companies = () => {
                         size="small"
                         onClick={() => handleDeleteCompany(company._id)}
                         disabled={loading}
-                        title="Deletar Empresa"
-                        color="error"
+                        title="Desativar Empresa"
+                        color="warning"
                       >
                         <DeleteIcon />
+                      </IconButton>
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteCompanyPermanently(company._id, company.name)}
+                        disabled={loading}
+                        title="Excluir Empresa Permanentemente"
+                        color="error"
+                        sx={{ ml: 0.5 }}
+                      >
+                        <DeleteForeverIcon />
                       </IconButton>
                     </TableCell>
                   </TableRow>
